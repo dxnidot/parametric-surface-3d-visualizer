@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudio 3D: Superficies Paramétricas, Tangentes y Vector Normal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Math.js for symbolic derivatives and expression evaluation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* 3D Floating Labels */
+        .label-3d {
+            position: absolute;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.15s ease;
+            z-index: 10;
+        }
+        input[type="range"] {
+            accent-color: #6366f1;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col lg:flex-row overflow-hidden select-none">
+
+    <!-- LEFT / MAIN 3D VIEWPORT AREA -->
+    <div id="viewport-wrapper" class="relative flex-1 h-[55vh] lg:h-full w-full bg-slate-950 overflow-hidden">
+        <!-- 3D Canvas Container -->
+        <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+        <!-- 3D Floating Vector Labels Overlay -->
+        <div id="labels-container" class="absolute inset-0 pointer-events-none overflow-hidden">
+            <div id="lbl-p" class="label-3d bg-white/90 text-slate-900 border border-white">P(u,v)</div>
+            <div id="lbl-r" class="label-3d bg-amber-500/90 text-slate-950 border border-amber-300">r: [0.00, 0.00, 0.00]</div>
+            <div id="lbl-ru" class="label-3d bg-rose-500/95 text-white border border-rose-300">r_u: [0.00, 0.00, 0.00]</div>
+            <div id="lbl-rv" class="label-3d bg-cyan-500/95 text-slate-950 border border-cyan-200">r_v: [0.00, 0.00, 0.00]</div>
+            <div id="lbl-n" class="label-3d bg-emerald-500/95 text-slate-950 border border-emerald-200">n = r_u × r_v: [0.00, 0.00, 0.00]</div>
+        </div>
+
+        <!-- Top Left Overlay: Title & Active Preset Badge -->
+        <div class="absolute top-3 left-3 right-3 sm:right-auto flex flex-wrap items-center gap-2 pointer-events-none">
+            <div class="glass-panel px-3.5 py-2 rounded-xl flex items-center gap-3 pointer-events-auto shadow-lg">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-indigo-400">
+                    <i class="fa-solid fa-cube text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                        Cálculo Vectorial 3D
+                        <span id="active-preset-badge" class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            Hoja del Profesor
+                        </span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">Superficie $\vec{r}(u,v)$, Tangentes $\vec{r}_u, \vec{r}_v$ y Vector Normal $\vec{n}$</p>
+                </div>
+            </div>
+
+            <!-- Export / Help Modal Trigger -->
+            <button id="btn-open-export" class="glass-panel hover:bg-slate-800/90 text-xs font-medium text-indigo-300 px-3 py-2 rounded-xl pointer-events-auto flex items-center gap-2 transition shadow-lg border border-indigo-500/30">
+                <i class="fa-solid fa-code"></i>
+                <span>Código GeoGebra / Python</span>
+            </button>
+
+            <!-- Presentation / Clean UI Button -->
+            <button id="btn-clean-ui" class="glass-panel hover:bg-slate-800/90 text-xs font-medium text-slate-300 px-3 py-2 rounded-xl pointer-events-auto flex items-center gap-1.5 transition shadow-lg" title="Modo Grabación / Pantalla Limpia">
+                <i class="fa-solid fa-video text-rose-400"></i>
+                <span class="hidden md:inline">Modo Reel</span>
+            </button>
+        </div>
+
+        <!-- Bottom Left Overlay: Color Legend & Quick Camera Controls -->
+        <div id="hud-bottom" class="absolute bottom-3 left-3 right-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
+            <!-- Vector Legend -->
+            <div class="glass-panel p-2.5 rounded-xl flex flex-wrap items-center gap-3 text-[11px] pointer-events-auto shadow-lg">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+                    <span class="text-slate-200 font-medium">$\vec{r}(u,v)$ Posición</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                    <span class="text-slate-200 font-medium">$\vec{r}_u$ Tangente $u$</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-cyan-400 inline-block"></span>
+                    <span class="text-slate-200 font-medium">$\vec{r}_v$ Tangente $v$</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
+                    <span class="text-slate-200 font-medium">$\vec{n} = \vec{r}_u \times \vec{r}_v$ Normal</span>
+                </div>
+            </div>
+
+            <!-- Quick Camera Views & Manual/Auto Rotation Bar -->
+            <div class="glass-panel p-1.5 rounded-xl flex flex-wrap items-center gap-1.5 pointer-events-auto shadow-lg">
+                <button id="btn-hud-play" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-slate-950 transition flex items-center gap-1.5" title="Iniciar o pausar el recorrido del punto (u0, v0)">
+                    <i id="icon-hud-play" class="fa-solid fa-play"></i>
+                    <span id="txt-hud-play">Animar (u,v)</span>
+                </button>
+                <div class="h-4 w-[1px] bg-slate-700 mx-0.5"></div>
+                <button id="btn-auto-rotate" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1.5" title="Activar o desactivar giro automático de cámara">
+                    <i id="icon-auto-rotate" class="fa-solid fa-hand-pointer text-amber-400"></i>
+                    <span id="txt-auto-rotate">Giro Cámara: OFF (Manual)</span>
+                </button>
+                <div class="h-4 w-[1px] bg-slate-700 mx-0.5 hidden sm:block"></div>
+                <div class="flex items-center gap-1">
+                    <button data-cam="iso" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-200 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Isométrica 3D (Reset)">
+                        <i class="fa-solid fa-cube mr-1"></i>3D Iso
+                    </button>
+                    <button data-cam="xy" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Superior (Plano XY)">
+                        XY
+                    </button>
+                    <button data-cam="xz" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Frontal (Plano XZ)">
+                        XZ
+                    </button>
+                    <button data-cam="yz" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Lateral (Plano YZ)">
+                        YZ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR: CONTROLS, EQUATIONS & LIVE READOUT -->
+    <aside id="sidebar-panel" class="w-full lg:w-[450px] xl:w-[490px] h-[45vh] lg:h-full bg-slate-900/95 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-hidden z-20">
+        
+        <!-- Tabs Header -->
+        <div class="flex border-b border-slate-800 bg-slate-950/60 px-2 pt-2 gap-1 shrink-0">
+            <button data-tab="tab-controls" class="tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg bg-slate-900 text-indigo-400 border-t border-x border-slate-800 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-sliders"></i> Funciones y Animación
+            </button>
+            <button data-tab="tab-math" class="tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-square-root-variable"></i> Desarrollo Analítico
+            </button>
+        </div>
+
+        <!-- Scrollable Content Container -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 select-text">
+
+            <!-- TAB 1: FUNCTIONS & ANIMATION CONTROLS -->
+            <div id="tab-controls" class="space-y-4">
+                
+                <!-- 1. Selector de Ejemplos / Presets -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bookmark text-indigo-400"></i>
+                            1. Elige o Crea tu Superficie
+                        </label>
+                        <span class="text-[11px] text-slate-500">Editable abajo</span>
+                    </div>
+                    <select id="preset-select" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="profesor">📄 Ejemplo 1: Hoja del Profesor (Polinomio grado 3)</option>
+                        <option value="propuesta1">✨ Propuesta 1: Polinomio Suave (Recomendado para entrega)</option>
+                        <option value="propuesta2">🐎 Propuesta 2: Paraboloide Hiperbólico / Silla de Montar</option>
+                        <option value="propuesta3">💠 Propuesta 3: Superficie Cúbica Cruzada</option>
+                        <option value="ondulada">🌊 Propuesta 4: Superficie Trigonométrica Ondulada</option>
+                        <option value="enneper">🌀 Propuesta 5: Superficie Mínima de Enneper</option>
+                    </select>
+                </div>
+
+                <!-- 2. Regla de Correspondencia Editable r(u,v) -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+                            2. Función Vectorial $\vec{r}(u,v) = [x, y, z]$
+                        </span>
+                        <button id="btn-apply-eq" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-lg transition shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-rotate text-[10px]"></i> Actualizar Gráfica
+                        </button>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="mono text-xs font-bold text-amber-400 w-12 shrink-0">x(u,v)=</span>
+                            <input id="inp-x" type="text" value="5*u^2 - 3*v^3 + 2*u - v" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="mono text-xs font-bold text-amber-400 w-12 shrink-0">y(u,v)=</span>
+                            <input id="inp-y" type="text" value="u^3 - 2*v^2 + u - 2" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="mono text-xs font-bold text-amber-400 w-12 shrink-0">z(u,v)=</span>
+                            <input id="inp-z" type="text" value="5*u^2 - 3*v^2 + 5" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Dominio de parámetros [uMin, uMax] y [vMin, vMax] -->
+                    <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                        <div class="flex items-center justify-between bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                            <span>Dominio $u$:</span>
+                            <div class="flex items-center gap-1">
+                                <input id="inp-umin" type="number" step="0.5" value="-1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                                <span>a</span>
+                                <input id="inp-umax" type="number" step="0.5" value="1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                            <span>Dominio $v$:</span>
+                            <div class="flex items-center gap-1">
+                                <input id="inp-vmin" type="number" step="0.5" value="-1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                                <span>a</span>
+                                <input id="inp-vmax" type="number" step="0.5" value="1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="eq-error-msg" class="hidden text-xs text-rose-400 bg-rose-950/50 border border-rose-800 rounded-lg px-2.5 py-1.5"></div>
+                </div>
+
+                <!-- 3. Controles Estáticos y de Animación en (u0, v0) -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-crosshairs text-emerald-400"></i>
+                            3. Punto $(u_0, v_0)$ y Animación
+                        </span>
+                        <span id="status-anim-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            MODO ESTÁTICO
+                        </span>
+                    </div>
+
+                    <!-- Prominent Play/Pause Button -->
+                    <button id="btn-play-anim" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg">
+                        <i id="icon-play" class="fa-solid fa-play"></i>
+                        <span id="txt-play">▶ Reproducir Animación desde este punto (u₀, v₀)</span>
+                    </button>
+
+                    <p class="text-[11px] text-slate-400 leading-tight">
+                        Puedes escribir un valor exacto o mover los deslizadores manualmente. Al presionar <strong>Reproducir</strong>, el movimiento continuará desde esa posición.
+                    </p>
+
+                    <!-- Sliders + Numeric Inputs for u0 and v0 -->
+                    <div class="space-y-3 pt-1">
+                        <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/90 space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-rose-400 font-semibold mono flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                    Parámetro u₀ (Curva u):
+                                </span>
+                                <input id="num-inp-u" type="number" step="0.05" value="0.50" class="mono w-20 bg-slate-950 border border-slate-700 focus:border-rose-400 rounded px-2 py-0.5 text-right font-bold text-white text-xs focus:outline-none">
+                            </div>
+                            <input id="slider-u" type="range" min="-1.5" max="1.5" step="0.01" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/90 space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-cyan-400 font-semibold mono flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                    Parámetro v₀ (Curva v):
+                                </span>
+                                <input id="num-inp-v" type="number" step="0.05" value="0.50" class="mono w-20 bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded px-2 py-0.5 text-right font-bold text-white text-xs focus:outline-none">
+                            </div>
+                            <input id="slider-v" type="range" min="-1.5" max="1.5" step="0.01" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Recorrido & Velocidad -->
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Trayectoria al animar:</label>
+                            <select id="anim-mode" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 focus:outline-none">
+                                <option value="circle">Trayectoria Circular (u y v)</option>
+                                <option value="sweep-u">Solo variar u (curva u)</option>
+                                <option value="sweep-v">Solo variar v (curva v)</option>
+                                <option value="lissajous">Recorrido Completo 2D</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                <span>Velocidad:</span>
+                                <span id="lbl-speed" class="mono text-slate-300">0.8x</span>
+                            </div>
+                            <input id="slider-speed" type="range" min="0.2" max="2.5" step="0.1" value="0.8" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer mt-2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Control de Cámara y Elementos Visibles -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 space-y-2.5">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
+                        4. Elementos Visibles en 3D
+                    </span>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="chk-vec-r" checked class="rounded text-indigo-500">
+                            <span class="text-amber-300">Vector $\vec{r}(u,v)$</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="chk-vec-tangents" checked class="rounded text-indigo-500">
+                            <span class="text-rose-300">Tangentes $\vec{r}_u, \vec{r}_v$</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="chk-vec-normal" checked class="rounded text-indigo-500">
+                            <span class="text-emerald-300">Normal $\vec{n} = \vec{r}_u \times \vec{r}_v$</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="chk-tangent-plane" checked class="rounded text-indigo-500">
+                            <span class="text-indigo-300">Plano Tangente</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="chk-curves" checked class="rounded text-indigo-500">
+                            <span class="text-slate-300">Curvas $u_0, v_0$</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="chk-labels" checked class="rounded text-indigo-500">
+                            <span class="text-slate-300">Etiquetas 3D</span>
+                        </label>
+                    </div>
+
+                    <!-- Vector Scale Control -->
+                    <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-xs">
+                        <span class="text-slate-400">Escala visual de vectores:</span>
+                        <input id="slider-vec-size" type="range" min="0.4" max="2.2" step="0.1" value="1.0" class="w-28 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- 5. Evaluación Numérica en Vivo -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 space-y-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span>Evaluación Exacta en P(u₀, v₀)</span>
+                        <span id="live-uv-badge" class="mono text-indigo-400">(u=0.50, v=0.50)</span>
+                    </span>
+                    <div class="space-y-1.5 text-[11px] mono">
+                        <div class="p-2 rounded bg-slate-900 border-l-2 border-amber-400 flex justify-between">
+                            <span class="text-amber-300 font-semibold">r(u₀,v₀) =</span>
+                            <span id="num-r" class="text-slate-200">[0.00, 0.00, 0.00]</span>
+                        </div>
+                        <div class="p-2 rounded bg-slate-900 border-l-2 border-rose-500 flex justify-between">
+                            <span class="text-rose-400 font-semibold">r_u(u₀,v₀) =</span>
+                            <span id="num-ru" class="text-slate-200">[0.00, 0.00, 0.00]</span>
+                        </div>
+                        <div class="p-2 rounded bg-slate-900 border-l-2 border-cyan-400 flex justify-between">
+                            <span class="text-cyan-400 font-semibold">r_v(u₀,v₀) =</span>
+                            <span id="num-rv" class="text-slate-200">[0.00, 0.00, 0.00]</span>
+                        </div>
+                        <div class="p-2 rounded bg-slate-900 border-l-2 border-emerald-400 flex justify-between">
+                            <span class="text-emerald-400 font-semibold">n = r_u×r_v =</span>
+                            <span id="num-n" class="text-slate-200">[0.00, 0.00, 0.00]</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: ANALYTICAL DERIVATIVES & CROSS PRODUCT (LIKE THE PROFESSOR'S SHEET) -->
+            <div id="tab-math" class="hidden space-y-4">
+                <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-3.5 text-xs text-indigo-200 leading-relaxed">
+                    <i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i>
+                    <strong>Cálculo Simbólico Automático:</strong> Al igual que en la hoja de tu profesor, aquí se calculan automáticamente las derivadas parciales simbólicas $\vec{r}_u$, $\vec{r}_v$ y el determinante del producto cruz $\vec{n} = \vec{r}_u \times \vec{r}_v$ para cualquier función que escribas.
+                </div>
+
+                <!-- Función Vectorial r(u,v) -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                    <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">1. Función Vectorial $\vec{r}(u,v)$</h3>
+                    <div id="sym-r" class="mono text-xs bg-slate-900 p-2.5 rounded-lg text-slate-200 overflow-x-auto whitespace-nowrap"></div>
+                </div>
+
+                <!-- Derivada Parcial r_u -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                    <h3 class="text-xs font-bold text-rose-400 uppercase tracking-wider">2. Vector Tangente en $u$: $\vec{r}_u = \frac{\partial \vec{r}}{\partial u}$</h3>
+                    <div id="sym-ru" class="mono text-xs bg-slate-900 p-2.5 rounded-lg text-slate-200 overflow-x-auto whitespace-nowrap"></div>
+                </div>
+
+                <!-- Derivada Parcial r_v -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                    <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">3. Vector Tangente en $v$: $\vec{r}_v = \frac{\partial \vec{r}}{\partial v}$</h3>
+                    <div id="sym-rv" class="mono text-xs bg-slate-900 p-2.5 rounded-lg text-slate-200 overflow-x-auto whitespace-nowrap"></div>
+                </div>
+
+                <!-- Determinante Producto Cruz -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+                    <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">4. Producto Cruz $\vec{n} = \vec{r}_u \times \vec{r}_v$</h3>
+                    <p class="text-[11px] text-slate-400">Desarrollando el determinante por cofactores $\hat{i}, \hat{j}, \hat{k}$:</p>
+                    <div id="sym-det" class="mono text-[11px] bg-slate-900 p-3 rounded-lg text-slate-300 overflow-x-auto"></div>
+                    <p class="text-[11px] text-emerald-300 font-semibold pt-1">Componentes de $\vec{n}(u,v) = [n_x, n_y, n_z]$:</p>
+                    <div id="sym-n" class="mono text-xs bg-slate-900 p-2.5 rounded-lg text-slate-200 space-y-1.5 overflow-x-auto"></div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- MODAL: EXPORT TO GEOGEBRA 3D / PYTHON -->
+    <div id="modal-export" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4 select-text">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
+                    <h2 class="text-sm font-bold text-white">Guía de Opciones y Código para GeoGebra 3D / Python</h2>
+                </div>
+                <button id="btn-close-export" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3.5">
+                    <p class="font-semibold text-indigo-300 mb-1">💡 ¿Cómo presentar o entregar este trabajo?</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300">
+                        <li><strong>Opción 1 (Directo aquí):</strong> La gráfica inicia fija en $(u_0, v_0)$ para que expliques las ecuaciones y muevas la cámara con el mouse; luego presiona <strong>"▶ Reproducir Animación"</strong> para mostrar el barrido de los vectores.</li>
+                        <li><strong>Opción 2 (GeoGebra 3D):</strong> Copia los comandos de abajo y pégalos en <a href="https://www.geogebra.org/3d" target="_blank" class="text-indigo-400 underline">GeoGebra Calculadora 3D</a>.</li>
+                        <li><strong>Opción 3 (Script de Python con Matplotlib):</strong> Copia el código de Python incluido más abajo para ejecutarlo en tu computadora o Google Colab.</li>
+                    </ul>
+                </div>
+
+                <!-- GeoGebra Commands -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-white uppercase tracking-wider">1. Comandos para GeoGebra 3D (De tu función actual):</span>
+                        <button id="btn-copy-ggb" class="bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> Copiar GeoGebra
+                        </button>
+                    </div>
+                    <pre id="code-geogebra" class="mono text-[11px] bg-slate-950 border border-slate-800 p-3.5 rounded-xl overflow-x-auto text-emerald-300"></pre>
+                </div>
+
+                <!-- Python Matplotlib Script -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-white uppercase tracking-wider">2. Script Completo en Python (Matplotlib 3D):</span>
+                        <button id="btn-copy-py" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> Copiar Python
+                        </button>
+                    </div>
+                    <pre id="code-python" class="mono text-[11px] bg-slate-950 border border-slate-800 p-3.5 rounded-xl overflow-x-auto text-amber-300"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /***********************************************************************
+         * 1. PRESETS DE SUPERFICIES PARAMÉTRICAS
+         ***********************************************************************/
+        const PRESETS = {
+            profesor: {
+                name: "Hoja del Profesor",
+                x: "5*u^2 - 3*v^3 + 2*u - v",
+                y: "u^3 - 2*v^2 + u - 2",
+                z: "5*u^2 - 3*v^2 + 5",
+                uMin: -1.5, uMax: 1.5,
+                vMin: -1.5, vMax: 1.5
+            },
+            propuesta1: {
+                name: "Propuesta 1: Polinomio Suave",
+                x: "2*u^2 - v^2 + u",
+                y: "u*v + 2*v - 1",
+                z: "u^3 - 2*v^2 + 3",
+                uMin: -1.5, uMax: 1.5,
+                vMin: -1.5, vMax: 1.5
+            },
+            propuesta2: {
+                name: "Propuesta 2: Silla de Montar",
+                x: "u^2 + v",
+                y: "u - v^2",
+                z: "u^2 - v^2 + 2",
+                uMin: -1.5, uMax: 1.5,
+                vMin: -1.5, vMax: 1.5
+            },
+            propuesta3: {
+                name: "Propuesta 3: Cúbica Cruzada",
+                x: "u^3 - 3*u*v^2",
+                y: "3*u^2*v - v^3",
+                z: "u^2 + v^2",
+                uMin: -1.5, uMax: 1.5,
+                vMin: -1.5, vMax: 1.5
+            },
+            ondulada: {
+                name: "Superficie Trigonométrica",
+                x: "u",
+                y: "v",
+                z: "sin(u) * cos(v)",
+                uMin: -2.5, uMax: 2.5,
+                vMin: -2.5, vMax: 2.5
+            },
+            enneper: {
+                name: "Superficie de Enneper",
+                x: "u - (u^3)/3 + u*v^2",
+                y: "v - (v^3)/3 + v*u^2",
+                z: "u^2 - v^2",
+                uMin: -1.5, uMax: 1.5,
+                vMin: -1.5, vMax: 1.5
+            }
+        };
+
+        /***********************************************************************
+         * 2. ESTADO GLOBAL DE LA APLICACIÓN (INICIA TOTALMENTE ESTÁTICO)
+         ***********************************************************************/
+        const state = {
+            exprX: PRESETS.profesor.x,
+            exprY: PRESETS.profesor.y,
+            exprZ: PRESETS.profesor.z,
+            compiled: {
+                x: null, y: null, z: null,
+                xu: null, yu: null, zu: null,
+                xv: null, yv: null, zv: null
+            },
+            symbolicStrings: {
+                xu: "", yu: "", zu: "",
+                xv: "", yv: "", zv: "",
+                nx: "", ny: "", nz: ""
+            },
+            uMin: -1.5,
+            uMax: 1.5,
+            vMin: -1.5,
+            vMax: 1.5,
+            u0: 0.5,
+            v0: 0.5,
+            // Inicia en falso para que todo comience quieto en (u0, v0) y con cámara manual
+            isPlaying: false,
+            autoRotateCam: false,
+            animMode: 'circle',
+            animSpeed: 0.8,
+            animTime: 0.0,
+            animAnchor: {
+                theta0: Math.PI / 4,
+                radius: 0.7071,
+                phiU0: 0,
+                phiV0: 0,
+                fixedU: 0.5,
+                fixedV: 0.5
+            },
+            vecSizeScale: 1.0,
+            surfaceScaleFactor: 1.0,
+            showVecR: true,
+            showTangents: true,
+            showNormal: true,
+            showTangentPlane: true,
+            showCurves: true,
+            showLabels: true,
+            cleanMode: false
+        };
+
+        // Sincroniza la fase de animación con el punto (u0, v0) actual para que al dar Play continúe sin saltos
+        function syncAnimationPhaseFromCurrentUV() {
+            state.animTime = 0;
+            const uMid = 0.5 * (state.uMin + state.uMax);
+            const vMid = 0.5 * (state.vMin + state.vMax);
+            const uAmp = Math.max(0.1, 0.42 * (state.uMax - state.uMin));
+            const vAmp = Math.max(0.1, 0.42 * (state.vMax - state.vMin));
+
+            const du = state.u0 - uMid;
+            const dv = state.v0 - vMid;
+            let r = Math.sqrt(du * du + dv * dv);
+            const maxR = Math.min(uAmp, vAmp);
+
+            if (r < 1e-4) {
+                r = 0.65 * maxR;
+                state.animAnchor.theta0 = 0;
+            } else {
+                state.animAnchor.theta0 = Math.atan2(dv, du);
+            }
+            state.animAnchor.radius = Math.min(r, maxR * 1.1);
+
+            const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+            state.animAnchor.phiU0 = Math.asin(clamp(du / uAmp, -1, 1));
+            state.animAnchor.phiV0 = Math.asin(clamp(dv / vAmp, -1, 1));
+            state.animAnchor.fixedU = state.u0;
+            state.animAnchor.fixedV = state.v0;
+        }
+
+        /***********************************************************************
+         * 3. MOTOR SIMBÓLICO Y COMPILACIÓN CON MATH.JS
+         ***********************************************************************/
+        function compileCurrentExpressions() {
+            const errBox = document.getElementById('eq-error-msg');
+            try {
+                const sx = document.getElementById('inp-x').value.trim();
+                const sy = document.getElementById('inp-y').value.trim();
+                const sz = document.getElementById('inp-z').value.trim();
+
+                let uMin = parseFloat(document.getElementById('inp-umin').value);
+                let uMax = parseFloat(document.getElementById('inp-umax').value);
+                let vMin = parseFloat(document.getElementById('inp-vmin').value);
+                let vMax = parseFloat(document.getElementById('inp-vmax').value);
+
+                if (isNaN(uMin)) uMin = -1.5;
+                if (isNaN(uMax) || uMax <= uMin) uMax = uMin + 3.0;
+                if (isNaN(vMin)) vMin = -1.5;
+                if (isNaN(vMax) || vMax <= vMin) vMax = vMin + 3.0;
+
+                // Parse and compute symbolic derivatives with respect to u and v
+                const nodeX = math.parse(sx);
+                const nodeY = math.parse(sy);
+                const nodeZ = math.parse(sz);
+
+                const dXu = math.derivative(nodeX, 'u');
+                const dYu = math.derivative(nodeY, 'u');
+                const dZu = math.derivative(nodeZ, 'u');
+
+                const dXv = math.derivative(nodeX, 'v');
+                const dYv = math.derivative(nodeY, 'v');
+                const dZv = math.derivative(nodeZ, 'v');
+
+                // Test evaluation at (0.5, 0.5)
+                const testScope = { u: 0.5, v: 0.5 };
+                nodeX.evaluate(testScope);
+                nodeY.evaluate(testScope);
+                nodeZ.evaluate(testScope);
+
+                // Save compiled functions
+                state.exprX = sx;
+                state.exprY = sy;
+                state.exprZ = sz;
+                state.uMin = uMin;
+                state.uMax = uMax;
+                state.vMin = vMin;
+                state.vMax = vMax;
+
+                state.compiled.x = nodeX.compile();
+                state.compiled.y = nodeY.compile();
+                state.compiled.z = nodeZ.compile();
+
+                state.compiled.xu = dXu.compile();
+                state.compiled.yu = dYu.compile();
+                state.compiled.zu = dZu.compile();
+
+                state.compiled.xv = dXv.compile();
+                state.compiled.yv = dYv.compile();
+                state.compiled.zv = dZv.compile();
+
+                // Save symbolic strings
+                const xuStr = dXu.toString();
+                const yuStr = dYu.toString();
+                const zuStr = dZu.toString();
+                const xvStr = dXv.toString();
+                const yvStr = dYv.toString();
+                const zvStr = dZv.toString();
+
+                state.symbolicStrings = {
+                    xu: xuStr, yu: yuStr, zu: zuStr,
+                    xv: xvStr, yv: yvStr, zv: zvStr,
+                    nx: `(${yuStr})*(${zvStr}) - (${zuStr})*(${yvStr})`,
+                    ny: `(${zuStr})*(${xvStr}) - (${xuStr})*(${zvStr})`,
+                    nz: `(${xuStr})*(${yvStr}) - (${yuStr})*(${xvStr})`
+                };
+
+                // Update sliders min/max
+                const slU = document.getElementById('slider-u');
+                const slV = document.getElementById('slider-v');
+                slU.min = state.uMin; slU.max = state.uMax;
+                slV.min = state.vMin; slV.max = state.vMax;
+
+                // Keep u0, v0 within domain bounds
+                state.u0 = Math.max(state.uMin, Math.min(state.uMax, state.u0));
+                state.v0 = Math.max(state.vMin, Math.min(state.vMax, state.v0));
+                slU.value = state.u0;
+                slV.value = state.v0;
+                document.getElementById('num-inp-u').value = state.u0.toFixed(2);
+                document.getElementById('num-inp-v').value = state.v0.toFixed(2);
+
+                syncAnimationPhaseFromCurrentUV();
+                errBox.classList.add('hidden');
+                updateAnalyticalTabUI();
+                updateExportCodes();
+                return true;
+            } catch (err) {
+                errBox.textContent = "Error de sintaxis: revisa tu expresión en términos de u y v (ej. 5*u^2 - 3*v^3).";
+                errBox.classList.remove('hidden');
+                return false;
+            }
+        }
+        function updateExportCodes() {
+            const s = state.symbolicStrings;
+            const ggb = [
+                `# 1. Crear deslizadores en GeoGebra 3D:`,
+                `u0 = Deslizador(${state.uMin}, ${state.uMax}, 0.05)`,
+                `v0 = Deslizador(${state.vMin}, ${state.vMax}, 0.05)`,
+                ``,
+                `# 2. Graficar la Superficie Paramétrica r(u,v):`,
+                `a = Superficie(${state.exprX}, ${state.exprY}, ${state.exprZ}, u, ${state.uMin}, ${state.uMax}, v, ${state.vMin}, ${state.vMax})`,
+                ``,
+                `# 3. Punto móvil P sobre la superficie y Vector Posición r:`,
+                `P = a(u0, v0)`,
+                `r = Vector((0, 0, 0), P)`,
+                ``,
+                `# 4. Curvas paramétricas u y v que pasan por P:`,
+                `CurvaU = Curva(a(t, v0), t, ${state.uMin}, ${state.uMax})`,
+                `CurvaV = Curva(a(u0, t), t, ${state.vMin}, ${state.vMax})`,
+                ``,
+                `# 5. Vectores Tangentes r_u, r_v y Vector Normal n = r_u x r_v:`,
+                `ru = Vector(P, P + (${s.xu.replace(/u/g,'u0').replace(/v/g,'v0')}, ${s.yu.replace(/u/g,'u0').replace(/v/g,'v0')}, ${s.zu.replace(/u/g,'u0').replace(/v/g,'v0')}))`,
+                `rv = Vector(P, P + (${s.xv.replace(/u/g,'u0').replace(/v/g,'v0')}, ${s.yv.replace(/u/g,'u0').replace(/v/g,'v0')}, ${s.zv.replace(/u/g,'u0').replace(/v/g,'v0')}))`,
+                `n = Vector(P, P + ((ru) ⊗ (rv)))`
+            ].join('\n');
+            document.getElementById('code-geogebra').textContent = ggb;
+
+            const toPy = (str) => str.replace(/\^/g, '**');
+            const py = [
+                `import numpy as np`,
+                `import matplotlib.pyplot as plt`,
+                ``,
+                `# 1. Definir la superficie paramétrica r(u,v) y derivadas parciales`,
+                `def r_vec(u, v):`,
+                `    x = ${toPy(state.exprX)}`,
+                `    y = ${toPy(state.exprY)}`,
+                `    z = ${toPy(state.exprZ)}`,
+                `    return np.array([x, y, z])`,
+                ``,
+                `def r_u(u, v):`,
+                `    return np.array([${toPy(s.xu)}, ${toPy(s.yu)}, ${toPy(s.zu)}], dtype=float)`,
+                ``,
+                `def r_v(u, v):`,
+                `    return np.array([${toPy(s.xv)}, ${toPy(s.yv)}, ${toPy(s.zv)}], dtype=float)`,
+                ``,
+                `# 2. Malla de parámetros (u, v)`,
+                `U, V = np.meshgrid(np.linspace(${state.uMin}, ${state.uMax}, 45), np.linspace(${state.vMin}, ${state.vMax}, 45))`,
+                `X, Y, Z = r_vec(U, V)`,
+                ``,
+                `# 3. Evaluar en el punto estático (u0, v0) = (${state.u0.toFixed(2)}, ${state.v0.toFixed(2)})`,
+                `u0, v0 = ${state.u0.toFixed(2)}, ${state.v0.toFixed(2)}`,
+                `P = r_vec(u0, v0)`,
+                `ru_val = r_u(u0, v0)`,
+                `rv_val = r_v(u0, v0)`,
+                `n_val = np.cross(ru_val, rv_val)`,
+                ``,
+                `fig = plt.figure(figsize=(10, 8))`,
+                `ax = fig.add_subplot(111, projection='3d')`,
+                `ax.plot_surface(X, Y, Z, cmap='plasma', alpha=0.65, edgecolor='none')`,
+                `ax.scatter(*P, color='black', s=60, label=f'P({u0}, {v0})')`,
+                `ax.quiver(*P, *ru_val, color='red', length=1.0, normalize=True, label='r_u (Tangente u)')`,
+                `ax.quiver(*P, *rv_val, color='cyan', length=1.0, normalize=True, label='r_v (Tangente v)')`,
+                `ax.quiver(*P, *n_val, color='green', length=1.2, normalize=True, label='n = r_u x r_v (Normal)')`,
+                `ax.legend()`,
+                `plt.show()`
+            ].join('\n');
+            document.getElementById('code-python').textContent = py;
+        }
+
+        function evalR(u, v) {
+            const scope = { u, v };
+            return new THREE.Vector3(
+                Number(state.compiled.x.evaluate(scope)) || 0,
+                Number(state.compiled.y.evaluate(scope)) || 0,
+                Number(state.compiled.z.evaluate(scope)) || 0
+            );
+        }
+
+        function evalRu(u, v) {
+            const scope = { u, v };
+            return new THREE.Vector3(
+                Number(state.compiled.xu.evaluate(scope)) || 0,
+                Number(state.compiled.yu.evaluate(scope)) || 0,
+                Number(state.compiled.zu.evaluate(scope)) || 0
+            );
+        }
+
+        function evalRv(u, v) {
+            const scope = { u, v };
+            return new THREE.Vector3(
+                Number(state.compiled.xv.evaluate(scope)) || 0,
+                Number(state.compiled.yv.evaluate(scope)) || 0,
+                Number(state.compiled.zv.evaluate(scope)) || 0
+            );
+        }
+
+        function updateAnalyticalTabUI() {
+            const s = state.symbolicStrings;
+            document.getElementById('sym-r').innerHTML =
+                `r(u,v) = [ <span class="text-amber-300">${state.exprX}</span> , <span class="text-amber-300">${state.exprY}</span> , <span class="text-amber-300">${state.exprZ}</span> ]`;
+
+            document.getElementById('sym-ru').innerHTML =
+                `r_u(u,v) = [ <span class="text-rose-300">${s.xu}</span> , <span class="text-rose-300">${s.yu}</span> , <span class="text-rose-300">${s.zu}</span> ]`;
+
+            document.getElementById('sym-rv').innerHTML =
+                `r_v(u,v) = [ <span class="text-cyan-300">${s.xv}</span> , <span class="text-cyan-300">${s.yv}</span> , <span class="text-cyan-300">${s.zv}</span> ]`;
+
+            document.getElementById('sym-det').innerHTML = `
+                <table class="w-full text-center border-collapse">
+                    <tr class="border-b border-slate-800 text-indigo-300 font-bold">
+                        <td class="py-1 px-2">î</td>
+                        <td class="py-1 px-2">ĵ</td>
+                        <td class="py-1 px-2">k̂</td>
+                    </tr>
+                    <tr class="text-rose-300">
+                        <td class="py-1 px-2">${s.xu}</td>
+                        <td class="py-1 px-2">${s.yu}</td>
+                        <td class="py-1 px-2">${s.zu}</td>
+                    </tr>
+                    <tr class="text-cyan-300">
+                        <td class="py-1 px-2">${s.xv}</td>
+                        <td class="py-1 px-2">${s.yv}</td>
+                        <td class="py-1 px-2">${s.zv}</td>
+                    </tr>
+                </table>
+            `;
+
+            document.getElementById('sym-n').innerHTML = `
+                <div><span class="text-emerald-400 font-bold">n_x =</span> ${s.nx}</div>
+                <div><span class="text-emerald-400 font-bold">n_y =</span> ${s.ny}</div>
+                <div><span class="text-emerald-400 font-bold">n_z =</span> ${s.nz}</div>
+            `;
+        }
+
+        /***********************************************************************
+         * 4. ESCENA THREE.JS (CON EJE Z VERTICAL COMO EN CÁLCULO VECTORIAL)
+         ***********************************************************************/
+        let scene, camera, renderer, controls;
+        let surfaceGroup, dynamicGroup;
+        let pointMesh, tangentPlaneMesh, curveULine, curveVLine;
+        let arrowR, arrowRu, arrowRv, arrowN;
+
+        // Positions in 3D scene for HTML floating labels
+        const labelWorldPositions = {
+            p: new THREE.Vector3(),
+            r: new THREE.Vector3(),
+            ru: new THREE.Vector3(),
+            rv: new THREE.Vector3(),
+            n: new THREE.Vector3()
+        };
+
+        function initThreeScene() {
+            const container = document.getElementById('canvas-container');
+
+            // Make Z-axis the vertical axis (standard in Calculus 3 & GeoGebra 3D)
+            THREE.Object3D.DefaultUp.set(0, 0, 1);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x070a12);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.up.set(0, 0, 1);
+            camera.position.set(15, -15, 11);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.06;
+            controls.autoRotate = state.autoRotateCam;
+            controls.autoRotateSpeed = 1.2;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
+            dirLight1.position.set(20, -20, 30);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x818cf8, 0.45);
+            dirLight2.position.set(-20, 20, -15);
+            scene.add(dirLight2);
+
+            // Reference Grid on XY Plane (Z=0) and Coordinate Axes
+            buildAxesAndGrid();
+
+            surfaceGroup = new THREE.Group();
+            scene.add(surfaceGroup);
+
+            dynamicGroup = new THREE.Group();
+            scene.add(dynamicGroup);
+
+            initDynamicObjects();
+            rebuildSurfaceGeometry();
+            updateDynamicVectors();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildAxesAndGrid() {
+            const grid = new THREE.GridHelper(16, 16, 0x334155, 0x1e293b);
+            grid.rotation.x = Math.PI / 2; // Align grid to XY plane
+            scene.add(grid);
+
+            // X (Red-ish), Y (Green-ish), Z (Blue-ish) Reference Axes
+            const axesLen = 8.5;
+            const matX = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.55 });
+            const matY = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.55 });
+            const matZ = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.65 });
+
+            const geomX = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-axesLen,0,0), new THREE.Vector3(axesLen,0,0)]);
+            const geomY = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-axesLen,0), new THREE.Vector3(0,axesLen,0)]);
+            const geomZ = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,-axesLen), new THREE.Vector3(0,0,axesLen)]);
+
+            scene.add(new THREE.Line(geomX, matX));
+            scene.add(new THREE.Line(geomY, matY));
+            scene.add(new THREE.Line(geomZ, matZ));
+        }
+
+        /***********************************************************************
+         * 5. CONSTRUCCIÓN DE LA MALLA DE LA SUPERFICIE PARAMÉTRICA
+         ***********************************************************************/
+        function rebuildSurfaceGeometry() {
+            // Clear existing surface mesh
+            while (surfaceGroup.children.length > 0) {
+                const obj = surfaceGroup.children[0];
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+                surfaceGroup.remove(obj);
+            }
+
+            const segs = 56;
+            const uMin = state.uMin, uMax = state.uMax;
+            const vMin = state.vMin, vMax = state.vMax;
+
+            // First pass: sample points to determine bounding box so any polynomial fits nicely inside a radius ~6 box
+            let maxCoord = 0.001;
+            const rawPoints = [];
+            let minZ = Infinity, maxZ = -Infinity;
+
+            for (let i = 0; i <= segs; i++) {
+                const u = uMin + ((uMax - uMin) * i) / segs;
+                for (let j = 0; j <= segs; j++) {
+                    const v = vMin + ((vMax - vMin) * j) / segs;
+                    const pt = evalR(u, v);
+                    rawPoints.push(pt);
+                    maxCoord = Math.max(maxCoord, Math.abs(pt.x), Math.abs(pt.y), Math.abs(pt.z));
+                    if (pt.z < minZ) minZ = pt.z;
+                    if (pt.z > maxZ) maxZ = pt.z;
+                }
+            }
+
+            // Target visual radius around 5.5 units so camera always has a great view
+            state.surfaceScaleFactor = 5.5 / maxCoord;
+            const scale = state.surfaceScaleFactor;
+
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(rawPoints.length * 3);
+            const colors = new Float32Array(rawPoints.length * 3);
+            const indices = [];
+
+            const colorLow = new THREE.Color(0x3b82f6);  // Deep Blue
+            const colorMid = new THREE.Color(0x8b5cf6);  // Violet/Purple
+            const colorHigh = new THREE.Color(0xec4899); // Pink/Magenta
+            const tempColor = new THREE.Color();
+            const zSpan = (maxZ - minZ) || 1;
+
+            for (let idx = 0; idx < rawPoints.length; idx++) {
+                const pt = rawPoints[idx];
+                positions[idx * 3]     = pt.x * scale;
+                positions[idx * 3 + 1] = pt.y * scale;
+                positions[idx * 3 + 2] = pt.z * scale;
+
+                const t = (pt.z - minZ) / zSpan;
+                if (t < 0.5) {
+                    tempColor.lerpColors(colorLow, colorMid, t * 2);
+                } else {
+                    tempColor.lerpColors(colorMid, colorHigh, (t - 0.5) * 2);
+                }
+                colors[idx * 3]     = tempColor.r;
+                colors[idx * 3 + 1] = tempColor.g;
+                colors[idx * 3 + 2] = tempColor.b;
+            }
+
+            for (let i = 0; i < segs; i++) {
+                for (let j = 0; j < segs; j++) {
+                    const a = i * (segs + 1) + j;
+                    const b = (i + 1) * (segs + 1) + j;
+                    const c = (i + 1) * (segs + 1) + (j + 1);
+                    const d = i * (segs + 1) + (j + 1);
+                    indices.push(a, b, d);
+                    indices.push(b, c, d);
+                }
+            }
+
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.computeVertexNormals();
+
+            const surfaceMat = new THREE.MeshPhongMaterial({
+                vertexColors: true,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.72,
+                shininess: 65,
+                specular: 0x334155
+            });
+
+            const mesh = new THREE.Mesh(geometry, surfaceMat);
+            surfaceGroup.add(mesh);
+
+            // Subtle wireframe grid lines on surface
+            const wireMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.08
+            });
+            const wireMesh = new THREE.Mesh(geometry, wireMat);
+            surfaceGroup.add(wireMesh);
+        }
+
+        /***********************************************************************
+         * 6. OBJETOS DINÁMICOS: PUNTO P, CURVAS u0/v0, PLANO TANGENTE Y FLECHAS 3D
+         ***********************************************************************/
+        function createCustomArrow(hexColor) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshPhongMaterial({
+                color: hexColor,
+                emissive: hexColor,
+                emissiveIntensity: 0.28,
+                shininess: 80
+            });
+
+            // Shaft cylinder along +Y initially, rotated to +Z
+            const shaftGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 16);
+            shaftGeo.translate(0, 0.5, 0);
+            shaftGeo.rotateX(Math.PI / 2); // Now along +Z
+            const shaft = new THREE.Mesh(shaftGeo, mat);
+
+            const headGeo = new THREE.ConeGeometry(0.16, 0.42, 20);
+            headGeo.translate(0, 0.21, 0);
+            headGeo.rotateX(Math.PI / 2); // Pointing along +Z
+            const head = new THREE.Mesh(headGeo, mat);
+
+            group.add(shaft);
+            group.add(head);
+            group.userData = { shaft, head };
+            return group;
+        }
+
+        function setCustomArrow(arrowGroup, origin, dirVector, length) {
+            if (length < 0.001 || dirVector.lengthSq() < 1e-10) {
+                arrowGroup.visible = false;
+                return;
+            }
+            arrowGroup.position.copy(origin);
+            const normDir = dirVector.clone().normalize();
+            const target = origin.clone().add(normDir);
+            arrowGroup.lookAt(target);
+
+            const headLen = Math.min(0.42, length * 0.35);
+            const shaftLen = Math.max(0.01, length - headLen);
+            arrowGroup.userData.shaft.scale.set(1, 1, shaftLen);
+            arrowGroup.userData.head.position.set(0, 0, shaftLen);
+        }
+
+        function initDynamicObjects() {
+            // Evaluation point P(u0, v0)
+            const ptGeo = new THREE.SphereGeometry(0.16, 24, 24);
+            const ptMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            pointMesh = new THREE.Mesh(ptGeo, ptMat);
+            dynamicGroup.add(pointMesh);
+
+            // Tangent Plane Patch
+            const planeGeo = new THREE.PlaneGeometry(2.6, 2.6, 4, 4);
+            const planeMat = new THREE.MeshPhongMaterial({
+                color: 0x6366f1,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.26,
+                depthWrite: false
+            });
+            tangentPlaneMesh = new THREE.Mesh(planeGeo, planeMat);
+            const planeBorder = new THREE.LineSegments(
+                new THREE.EdgesGeometry(planeGeo),
+                new THREE.LineBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.65 })
+            );
+            tangentPlaneMesh.add(planeBorder);
+            dynamicGroup.add(tangentPlaneMesh);
+
+            // Parameter Curves u-varying (Red/Rose) & v-varying (Cyan)
+            curveULine = new THREE.Mesh(
+                new THREE.BufferGeometry(),
+                new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+            );
+            curveVLine = new THREE.Mesh(
+                new THREE.BufferGeometry(),
+                new THREE.MeshBasicMaterial({ color: 0x22d3ee })
+            );
+            dynamicGroup.add(curveULine);
+            dynamicGroup.add(curveVLine);
+
+            // 4 Vector Arrows: Position r (Amber), Tangent r_u (Rose), Tangent r_v (Cyan), Normal n (Emerald)
+            arrowR  = createCustomArrow(0xfbbf24);
+            arrowRu = createCustomArrow(0xf43f5e);
+            arrowRv = createCustomArrow(0x22d3ee);
+            arrowN  = createCustomArrow(0x10b981);
+
+            dynamicGroup.add(arrowR);
+            dynamicGroup.add(arrowRu);
+            dynamicGroup.add(arrowRv);
+            dynamicGroup.add(arrowN);
+        }
+
+        function updateParameterCurves(u0, v0, scale) {
+            const uMin = state.uMin, uMax = state.uMax;
+            const vMin = state.vMin, vMax = state.vMax;
+            const steps = 60;
+
+            // Curve U: v fixed at v0, u varies in [uMin, uMax]
+            const ptsU = [];
+            for (let i = 0; i <= steps; i++) {
+                const u = uMin + ((uMax - uMin) * i) / steps;
+                ptsU.push(evalR(u, v0).multiplyScalar(scale));
+            }
+            const pathU = new THREE.CatmullRomCurve3(ptsU);
+            if (curveULine.geometry) curveULine.geometry.dispose();
+            curveULine.geometry = new THREE.TubeGeometry(pathU, 50, 0.038, 8, false);
+            curveULine.visible = state.showCurves;
+
+            // Curve V: u fixed at u0, v varies in [vMin, vMax]
+            const ptsV = [];
+            for (let i = 0; i <= steps; i++) {
+                const v = vMin + ((vMax - vMin) * i) / steps;
+                ptsV.push(evalR(u0, v).multiplyScalar(scale));
+            }
+            const pathV = new THREE.CatmullRomCurve3(ptsV);
+            if (curveVLine.geometry) curveVLine.geometry.dispose();
+            curveVLine.geometry = new THREE.TubeGeometry(pathV, 50, 0.038, 8, false);
+            curveVLine.visible = state.showCurves;
+        }
+
+        function updateDynamicVectors() {
+            const u0 = state.u0;
+            const v0 = state.v0;
+            const scale = state.surfaceScaleFactor;
+
+            // 1. Exact Mathematical Evaluations
+            const rExact  = evalR(u0, v0);
+            const ruExact = evalRu(u0, v0);
+            const rvExact = evalRv(u0, v0);
+            const nExact  = new THREE.Vector3().crossVectors(ruExact, rvExact);
+
+            // 2. Visual 3D Scene Positions
+            const P = rExact.clone().multiplyScalar(scale);
+            pointMesh.position.copy(P);
+
+            // Update curves passing through P
+            updateParameterCurves(u0, v0, scale);
+
+            // Visual lengths for vectors so they are always clear and well-proportioned
+            const baseVecLen = 2.4 * state.vecSizeScale;
+
+            // Position vector r(u0, v0) from Origin (0,0,0) to P
+            arrowR.visible = state.showVecR;
+            if (state.showVecR) {
+                setCustomArrow(arrowR, new THREE.Vector3(0, 0, 0), P, P.length());
+            }
+
+            // Tangent vector r_u
+            arrowRu.visible = state.showTangents;
+            if (state.showTangents) {
+                setCustomArrow(arrowRu, P, ruExact, baseVecLen);
+            }
+
+            // Tangent vector r_v
+            arrowRv.visible = state.showTangents;
+            if (state.showTangents) {
+                setCustomArrow(arrowRv, P, rvExact, baseVecLen);
+            }
+
+            // Normal vector n = r_u x r_v
+            arrowN.visible = state.showNormal;
+            if (state.showNormal) {
+                setCustomArrow(arrowN, P, nExact, baseVecLen * 1.15);
+            }
+
+            // Tangent Plane oriented perpendicular to Normal vector n
+            tangentPlaneMesh.visible = state.showTangentPlane && nExact.lengthSq() > 1e-8;
+            if (tangentPlaneMesh.visible) {
+                tangentPlaneMesh.position.copy(P);
+                const lookTarget = P.clone().add(nExact.clone().normalize());
+                tangentPlaneMesh.lookAt(lookTarget);
+            }
+
+            // Save 3D anchor points for floating HTML labels
+            labelWorldPositions.p.copy(P).add(new THREE.Vector3(0, 0, 0.35));
+            labelWorldPositions.r.copy(P).multiplyScalar(0.5);
+            labelWorldPositions.ru.copy(P).add(ruExact.clone().normalize().multiplyScalar(baseVecLen + 0.35));
+            labelWorldPositions.rv.copy(P).add(rvExact.clone().normalize().multiplyScalar(baseVecLen + 0.35));
+            labelWorldPositions.n.copy(P).add(nExact.clone().normalize().multiplyScalar(baseVecLen * 1.15 + 0.35));
+
+            // Update floating label text with real-time numeric coordinates
+            const fmtNum = (v) => `[${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}]`;
+            document.getElementById('lbl-p').textContent = `P(${u0.toFixed(2)}, ${v0.toFixed(2)})`;
+            document.getElementById('lbl-r').textContent = `r: ${fmtNum(rExact)}`;
+            document.getElementById('lbl-ru').textContent = `r_u: ${fmtNum(ruExact)}`;
+            document.getElementById('lbl-rv').textContent = `r_v: ${fmtNum(rvExact)}`;
+            document.getElementById('lbl-n').textContent = `n = r_u × r_v: ${fmtNum(nExact)}`;
+
+            // Update Numerical Readout in Sidebar
+            const fmt = (v) => `[${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}]`;
+            document.getElementById('num-inp-u').value = u0.toFixed(2);
+            document.getElementById('num-inp-v').value = v0.toFixed(2);
+            document.getElementById('live-uv-badge').textContent = `(u=${u0.toFixed(2)}, v=${v0.toFixed(2)})`;
+            document.getElementById('num-r').textContent  = fmt(rExact);
+            document.getElementById('num-ru').textContent = fmt(ruExact);
+            document.getElementById('num-rv').textContent = fmt(rvExact);
+            document.getElementById('num-n').textContent  = fmt(nExact);
+        }
+
+        function updateFloatingLabels() {
+            const container = document.getElementById('canvas-container');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            const map = [
+                { id: 'lbl-p',  pos: labelWorldPositions.p,  show: state.showLabels },
+                { id: 'lbl-r',  pos: labelWorldPositions.r,  show: state.showLabels && state.showVecR },
+                { id: 'lbl-ru', pos: labelWorldPositions.ru, show: state.showLabels && state.showTangents },
+                { id: 'lbl-rv', pos: labelWorldPositions.rv, show: state.showLabels && state.showTangents },
+                { id: 'lbl-n',  pos: labelWorldPositions.n,  show: state.showLabels && state.showNormal }
+            ];
+
+            map.forEach(item => {
+                const el = document.getElementById(item.id);
+                if (!item.show) {
+                    el.style.opacity = '0';
+                    return;
+                }
+                const proj = item.pos.clone().project(camera);
+                if (proj.z > 1) {
+                    el.style.opacity = '0';
+                    return;
+                }
+                const x = (proj.x * 0.5 + 0.5) * w;
+                const y = (-proj.y * 0.5 + 0.5) * h;
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                el.style.opacity = '1';
+            });
+        }
+
+        /***********************************************************************
+         * 7. BUCLE DE ANIMACIÓN Y EVENTOS DE INTERFAZ
+         ***********************************************************************/
+        let lastFrameTime = performance.now();
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+
+            const dt = (now - lastFrameTime) / 1000;
+            lastFrameTime = now;
+
+            if (state.isPlaying) {
+                state.animTime += dt * state.animSpeed;
+                const uMid = 0.5 * (state.uMin + state.uMax);
+                const vMid = 0.5 * (state.vMin + state.vMax);
+                const uAmp = Math.max(0.1, 0.42 * (state.uMax - state.uMin));
+                const vAmp = Math.max(0.1, 0.42 * (state.vMax - state.vMin));
+                const t = state.animTime;
+
+                if (state.animMode === 'circle') {
+                    const R = state.animAnchor.radius;
+                    const th = state.animAnchor.theta0 + t;
+                    state.u0 = Math.max(state.uMin, Math.min(state.uMax, uMid + R * Math.cos(th)));
+                    state.v0 = Math.max(state.vMin, Math.min(state.vMax, vMid + R * Math.sin(th)));
+                } else if (state.animMode === 'sweep-u') {
+                    state.u0 = uMid + uAmp * Math.sin(state.animAnchor.phiU0 + t * 1.2);
+                    state.v0 = state.animAnchor.fixedV;
+                } else if (state.animMode === 'sweep-v') {
+                    state.u0 = state.animAnchor.fixedU;
+                    state.v0 = vMid + vAmp * Math.sin(state.animAnchor.phiV0 + t * 1.2);
+                } else if (state.animMode === 'lissajous') {
+                    state.u0 = uMid + uAmp * Math.sin(state.animAnchor.phiU0 + t * 1.1);
+                    state.v0 = vMid + vAmp * Math.sin(state.animAnchor.phiV0 + t * 0.75);
+                }
+
+                document.getElementById('slider-u').value = state.u0;
+                document.getElementById('slider-v').value = state.v0;
+                updateDynamicVectors();
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+            updateFloatingLabels();
+        }
+
+        function setCameraPresetView(viewType) {
+            // Stop auto-rotation when user picks a specific view so they have manual control
+            state.autoRotateCam = false;
+            controls.autoRotate = false;
+            updateAutoRotateButtonUI();
+
+            controls.target.set(0, 0, 0);
+            if (viewType === 'iso') {
+                camera.position.set(15, -15, 11);
+            } else if (viewType === 'xy') {
+                camera.position.set(0, -0.01, 22);
+            } else if (viewType === 'xz') {
+                camera.position.set(0, -22, 0);
+            } else if (viewType === 'yz') {
+                camera.position.set(22, 0, 0);
+            }
+            controls.update();
+        }
+
+        function updateAutoRotateButtonUI() {
+            const btnRot = document.getElementById('btn-auto-rotate');
+            const iconRot = document.getElementById('icon-auto-rotate');
+            const txtRot = document.getElementById('txt-auto-rotate');
+
+            if (state.autoRotateCam) {
+                btnRot.className = "px-2.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 hover:bg-indigo-600/50 transition flex items-center gap-1.5";
+                iconRot.className = "fa-solid fa-arrows-rotate fa-spin text-indigo-300";
+                txtRot.textContent = "Giro Cámara: ON (Auto)";
+            } else {
+                btnRot.className = "px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1.5";
+                iconRot.className = "fa-solid fa-hand-pointer text-amber-400";
+                txtRot.textContent = "Giro Cámara: OFF (Manual)";
+            }
+        }
+
+        function updatePlayButtonUI() {
+            const btnPlay = document.getElementById('btn-play-anim');
+            const icon = document.getElementById('icon-play');
+            const txt = document.getElementById('txt-play');
+            const badge = document.getElementById('status-anim-badge');
+
+            const hudBtn = document.getElementById('btn-hud-play');
+            const hudIcon = document.getElementById('icon-hud-play');
+            const hudTxt = document.getElementById('txt-hud-play');
+
+            if (state.isPlaying) {
+                icon.className = "fa-solid fa-pause";
+                txt.textContent = "⏸ Pausar Animación en el punto actual";
+                btnPlay.className = "w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg";
+                badge.textContent = "ANIMANDO (u, v)";
+                badge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+
+                hudIcon.className = "fa-solid fa-pause";
+                hudTxt.textContent = "Pausar (u,v)";
+                hudBtn.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-1.5";
+            } else {
+                icon.className = "fa-solid fa-play";
+                txt.textContent = "▶ Reproducir Animación desde este punto (u₀, v₀)";
+                btnPlay.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg";
+                badge.textContent = "MODO ESTÁTICO";
+                badge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30";
+
+                hudIcon.className = "fa-solid fa-play";
+                hudTxt.textContent = "Animar (u,v)";
+                hudBtn.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-slate-950 transition flex items-center gap-1.5";
+            }
+        }
+
+        function toggleParameterAnimation() {
+            if (!state.isPlaying) {
+                // Synchronize starting phase with current static (u0, v0) so it continues smoothly without jumping
+                syncAnimationPhaseFromCurrentUV();
+                state.isPlaying = true;
+            } else {
+                state.isPlaying = false;
+                updateExportCodes();
+            }
+            updatePlayButtonUI();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function setupUIEvents() {
+            // Preset Selector
+            document.getElementById('preset-select').addEventListener('change', (e) => {
+                const p = PRESETS[e.target.value];
+                if (!p) return;
+                document.getElementById('inp-x').value = p.x;
+                document.getElementById('inp-y').value = p.y;
+                document.getElementById('inp-z').value = p.z;
+                document.getElementById('inp-umin').value = p.uMin;
+                document.getElementById('inp-umax').value = p.uMax;
+                document.getElementById('inp-vmin').value = p.vMin;
+                document.getElementById('inp-vmax').value = p.vMax;
+                document.getElementById('active-preset-badge').textContent = p.name;
+
+                if (compileCurrentExpressions()) {
+                    rebuildSurfaceGeometry();
+                    updateDynamicVectors();
+                }
+            });
+
+            // Apply Custom Equations Button
+            document.getElementById('btn-apply-eq').addEventListener('click', () => {
+                document.getElementById('active-preset-badge').textContent = "Función Personalizada";
+                if (compileCurrentExpressions()) {
+                    rebuildSurfaceGeometry();
+                    updateDynamicVectors();
+                }
+            });
+
+            // Play / Pause Animation Buttons (Sidebar + HUD)
+            document.getElementById('btn-play-anim').addEventListener('click', toggleParameterAnimation);
+            document.getElementById('btn-hud-play').addEventListener('click', toggleParameterAnimation);
+
+            // Sliders u0 and v0
+            document.getElementById('slider-u').addEventListener('input', (e) => {
+                state.isPlaying = false;
+                updatePlayButtonUI();
+                state.u0 = parseFloat(e.target.value) || 0;
+                syncAnimationPhaseFromCurrentUV();
+                updateDynamicVectors();
+                updateExportCodes();
+            });
+
+            document.getElementById('slider-v').addEventListener('input', (e) => {
+                state.isPlaying = false;
+                updatePlayButtonUI();
+                state.v0 = parseFloat(e.target.value) || 0;
+                syncAnimationPhaseFromCurrentUV();
+                updateDynamicVectors();
+                updateExportCodes();
+            });
+
+            // Direct Numeric Inputs for u0 and v0
+            document.getElementById('num-inp-u').addEventListener('change', (e) => {
+                state.isPlaying = false;
+                updatePlayButtonUI();
+                let val = parseFloat(e.target.value);
+                if (isNaN(val)) val = 0.5;
+                state.u0 = Math.max(state.uMin, Math.min(state.uMax, val));
+                document.getElementById('slider-u').value = state.u0;
+                syncAnimationPhaseFromCurrentUV();
+                updateDynamicVectors();
+                updateExportCodes();
+            });
+
+            document.getElementById('num-inp-v').addEventListener('change', (e) => {
+                state.isPlaying = false;
+                updatePlayButtonUI();
+                let val = parseFloat(e.target.value);
+                if (isNaN(val)) val = 0.5;
+                state.v0 = Math.max(state.vMin, Math.min(state.vMax, val));
+                document.getElementById('slider-v').value = state.v0;
+                syncAnimationPhaseFromCurrentUV();
+                updateDynamicVectors();
+                updateExportCodes();
+            });
+
+            // Animation Mode & Speed
+            document.getElementById('anim-mode').addEventListener('change', (e) => {
+                syncAnimationPhaseFromCurrentUV();
+                state.animMode = e.target.value;
+            });
+            document.getElementById('slider-speed').addEventListener('input', (e) => {
+                state.animSpeed = parseFloat(e.target.value);
+                document.getElementById('lbl-speed').textContent = `${state.animSpeed.toFixed(1)}x`;
+            });
+
+            // Checkboxes for visibility
+            document.getElementById('chk-vec-r').addEventListener('change', (e) => {
+                state.showVecR = e.target.checked;
+                updateDynamicVectors();
+            });
+            document.getElementById('chk-vec-tangents').addEventListener('change', (e) => {
+                state.showTangents = e.target.checked;
+                updateDynamicVectors();
+            });
+            document.getElementById('chk-vec-normal').addEventListener('change', (e) => {
+                state.showNormal = e.target.checked;
+                updateDynamicVectors();
+            });
+            document.getElementById('chk-tangent-plane').addEventListener('change', (e) => {
+                state.showTangentPlane = e.target.checked;
+                updateDynamicVectors();
+            });
+            document.getElementById('chk-curves').addEventListener('change', (e) => {
+                state.showCurves = e.target.checked;
+                updateDynamicVectors();
+            });
+            document.getElementById('chk-labels').addEventListener('change', (e) => {
+                state.showLabels = e.target.checked;
+            });
+            document.getElementById('slider-vec-size').addEventListener('input', (e) => {
+                state.vecSizeScale = parseFloat(e.target.value);
+                updateDynamicVectors();
+            });
+
+            // Camera Auto Rotate Toggle
+            document.getElementById('btn-auto-rotate').addEventListener('click', () => {
+                state.autoRotateCam = !state.autoRotateCam;
+                controls.autoRotate = state.autoRotateCam;
+                updateAutoRotateButtonUI();
+            });
+
+            // Quick Camera Preset Views (3D Iso, XY, XZ, YZ)
+            document.querySelectorAll('.cam-view-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setCameraPresetView(btn.getAttribute('data-cam'));
+                });
+            });
+
+            // Clean Mode / Reel Mode
+            document.getElementById('btn-clean-ui').addEventListener('click', () => {
+                state.cleanMode = !state.cleanMode;
+                const sidebar = document.getElementById('sidebar-panel');
+                sidebar.classList.toggle('hidden', state.cleanMode);
+                setTimeout(onWindowResize, 50);
+            });
+
+            // Sidebar Tabs
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.getAttribute('data-tab');
+                    document.getElementById('tab-controls').classList.toggle('hidden', target !== 'tab-controls');
+                    document.getElementById('tab-math').classList.toggle('hidden', target !== 'tab-math');
+
+                    tabBtns.forEach(b => {
+                        const active = b === btn;
+                        b.className = active
+                            ? "tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg bg-slate-900 text-indigo-400 border-t border-x border-slate-800 flex items-center justify-center gap-1.5"
+                            : "tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5";
+                    });
+                });
+            });
+
+            // Export Modal
+            const modal = document.getElementById('modal-export');
+            document.getElementById('btn-open-export').addEventListener('click', () => {
+                updateExportCodes();
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+            document.getElementById('btn-close-export').addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+
+            const copyTextHelper = (elementId, btnId, defaultLabel) => {
+                const text = document.getElementById(elementId).textContent;
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const btn = document.getElementById(btnId);
+                btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> ¡Copiado!';
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa-regular fa-copy"></i> ${defaultLabel}`;
+                }, 2000);
+            };
+
+            document.getElementById('btn-copy-ggb').addEventListener('click', () => {
+                copyTextHelper('code-geogebra', 'btn-copy-ggb', 'Copiar GeoGebra');
+            });
+            document.getElementById('btn-copy-py').addEventListener('click', () => {
+                copyTextHelper('code-python', 'btn-copy-py', 'Copiar Python');
+            });
+        }
+
+        // Start Application on Window Load (Static Mode by default)
+        window.onload = function () {
+            compileCurrentExpressions();
+            initThreeScene();
+            setupUIEvents();
+            updateAutoRotateButtonUI();
+            updatePlayButtonUI();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
