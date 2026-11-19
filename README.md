@@ -39,7 +39,7 @@ No requiere instalación de dependencias ni servidores complejos (arquitectura *
    git clone https://github.com/dxnidot/parametric-surface-3d-visualizer.git
    cd parametric-surface-3d-visualizer
    ```
-2. Abre el archivo `index.html` directamente en cualquier navegador web moderno (Chrome, Edge, Firefox, Brave).
+2. Abre `index.html` directamente en el navegador o súbelo a Vercel (sitio estático, sin build).
 
 ---
 

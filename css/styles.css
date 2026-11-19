@@ -1,0 +1,47 @@
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0b0f19;
+        color: #e2e8f0;
+        overflow-x: hidden;
+    }
+    .mono {
+        font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+    }
+    /* 3D Floating Labels */
+    .label-3d {
+        position: absolute;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        transition: opacity 0.15s ease;
+        z-index: 10;
+    }
+    input[type="range"] {
+        accent-color: #6366f1;
+    }
+    .glass-panel {
+        background: rgba(15, 23, 42, 0.82);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(51, 65, 85, 0.6);
+    }
