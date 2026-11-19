@@ -57,4 +57,16 @@ En cualquier punto regular $P(u_0, v_0)$ sobre la superficie:
 
 ## 📄 Licencia
 
-Este proyecto es de uso libre con fines educativos y académicos.
+Licencia MIT, ver [LICENSE](LICENSE).
+
+---
+
+## 🎨 Recompilar Tailwind
+
+`css/tailwind.css` está precompilado. Si añades clases nuevas en `index.html` o `js/app.js`, regéneralo con un `tailwind.config.js` temporal (`darkMode: "class"`, `content: ["./index.html","./js/app.js"]`):
+
+```bash
+npx tailwindcss@3.4.17 -c tailwind.config.js -i entrada.css -o css/tailwind.css --minify
+```
+
+donde `entrada.css` contiene `@tailwind base; @tailwind components; @tailwind utilities;`.
