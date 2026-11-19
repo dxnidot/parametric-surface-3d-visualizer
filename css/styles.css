@@ -8,21 +8,42 @@
         font-family: 'JetBrains Mono', monospace;
     }
     /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+:root {
+    --scrollbar-thumb: #64748b;
+    --scrollbar-track: #0f172a;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+/* Respaldo WebKit/Blink antiguos */
+@supports not (scrollbar-color: auto) {
+    * { scrollbar-width: auto; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 9999px; }
+}
+/* Foco visible para teclado */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 2px;
+}
+/* Objetivos tactiles de al menos 24px */
+button, input[type="range"], input[type="number"], select {
+    min-block-size: 24px;
+}
+@media (pointer: coarse) {
+    button, input[type="range"], input[type="number"], select { min-block-size: 40px; }
+}
+/* Respetar preferencia de menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
-    ::-webkit-scrollbar-track {
-        background: #0f172a;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #334155;
-        border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #475569;
-    }
-    /* 3D Floating Labels */
+}
+/* 3D Floating Labels */
     .label-3d {
         position: absolute;
         pointer-events: none;

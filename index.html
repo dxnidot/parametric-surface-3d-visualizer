@@ -12,10 +12,10 @@
     <!-- Tailwind CSS (compilado, ver README) -->
     <link rel="stylesheet" href="css/tailwind.css">
     <!-- Three.js & OrbitControls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" integrity="sha384-wagZhIFgY4hD+7awjQjR4e2E294y6J2HSnd8eTNc15ZubTeQeVRZwhQJ+W6hnBsf" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" defer integrity="sha384-wagZhIFgY4hD+7awjQjR4e2E294y6J2HSnd8eTNc15ZubTeQeVRZwhQJ+W6hnBsf" crossorigin="anonymous"></script>
     <!-- Math.js for symbolic derivatives and expression evaluation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js" integrity="sha384-2NnkIgIitZUPvVF20yEtYm3encP/kCjZ8nxchj4j7cbqmRi9jaVLYz/Pwn/ZgWQ6" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js" defer integrity="sha384-2NnkIgIitZUPvVF20yEtYm3encP/kCjZ8nxchj4j7cbqmRi9jaVLYz/Pwn/ZgWQ6" crossorigin="anonymous"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <!-- Google Fonts -->
@@ -23,12 +23,12 @@
 
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="h-screen w-screen flex flex-col lg:flex-row overflow-hidden select-none">
+<body class="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
 
     <!-- LEFT / MAIN 3D VIEWPORT AREA -->
-    <div id="viewport-wrapper" class="relative flex-1 h-[55vh] lg:h-full w-full bg-slate-950 overflow-hidden">
+    <main id="viewport-wrapper" class="relative flex-1 h-[55vh] lg:h-full w-full bg-slate-950 overflow-hidden">
         <!-- 3D Canvas Container -->
-        <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+        <div id="canvas-container" role="img" aria-label="Gráfica 3D interactiva de la superficie paramétrica con sus vectores tangentes y normal. Arrastra para rotar y usa la rueda para hacer zoom." class="w-full h-full cursor-grab active:cursor-grabbing select-none"></div>
 
         <!-- 3D Floating Vector Labels Overlay -->
         <div id="labels-container" class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -48,11 +48,11 @@
                 <div>
                     <h1 class="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-2">
                         Cálculo Vectorial 3D
-                        <span id="active-preset-badge" class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        <span id="active-preset-badge" class="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                             Hoja del Profesor
                         </span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">Superficie $\vec{r}(u,v)$, Tangentes $\vec{r}_u, \vec{r}_v$ y Vector Normal $\vec{n}$</p>
+                    <p class="text-xs text-slate-400 hidden sm:block">Superficie $\vec{r}(u,v)$, Tangentes $\vec{r}_u, \vec{r}_v$ y Vector Normal $\vec{n}$</p>
                 </div>
             </div>
 
@@ -72,7 +72,7 @@
         <!-- Bottom Left Overlay: Color Legend & Quick Camera Controls -->
         <div id="hud-bottom" class="absolute bottom-3 left-3 right-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
             <!-- Vector Legend -->
-            <div class="glass-panel p-2.5 rounded-xl flex flex-wrap items-center gap-3 text-[11px] pointer-events-auto shadow-lg">
+            <div class="glass-panel p-2.5 rounded-xl flex flex-wrap items-center gap-3 text-xs pointer-events-auto shadow-lg">
                 <div class="flex items-center gap-1.5">
                     <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
                     <span class="text-slate-200 font-medium">$\vec{r}(u,v)$ Posición</span>
@@ -104,32 +104,32 @@
                 </button>
                 <div class="h-4 w-[1px] bg-slate-700 mx-0.5 hidden sm:block"></div>
                 <div class="flex items-center gap-1">
-                    <button data-cam="iso" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-200 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Isométrica 3D (Reset)">
+                    <button data-cam="iso" class="cam-view-btn px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Isométrica 3D (Reset)">
                         <i class="fa-solid fa-cube mr-1"></i>3D Iso
                     </button>
-                    <button data-cam="xy" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Superior (Plano XY)">
+                    <button data-cam="xy" class="cam-view-btn px-2 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Superior (Plano XY)">
                         XY
                     </button>
-                    <button data-cam="xz" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Frontal (Plano XZ)">
+                    <button data-cam="xz" class="cam-view-btn px-2 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Frontal (Plano XZ)">
                         XZ
                     </button>
-                    <button data-cam="yz" class="cam-view-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Lateral (Plano YZ)">
+                    <button data-cam="yz" class="cam-view-btn px-2 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-800 text-slate-300 hover:bg-indigo-600/40 hover:text-indigo-200 transition" title="Vista Lateral (Plano YZ)">
                         YZ
                     </button>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- RIGHT SIDEBAR: CONTROLS, EQUATIONS & LIVE READOUT -->
     <aside id="sidebar-panel" class="w-full lg:w-[450px] xl:w-[490px] h-[45vh] lg:h-full bg-slate-900/95 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-hidden z-20">
         
         <!-- Tabs Header -->
-        <div class="flex border-b border-slate-800 bg-slate-950/60 px-2 pt-2 gap-1 shrink-0">
-            <button data-tab="tab-controls" class="tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg bg-slate-900 text-indigo-400 border-t border-x border-slate-800 flex items-center justify-center gap-1.5">
+        <div role="tablist" aria-label="Paneles de la barra lateral" class="flex border-b border-slate-800 bg-slate-950/60 px-2 pt-2 gap-1 shrink-0">
+            <button role="tab" id="tabbtn-controls" aria-selected="true" aria-controls="tab-controls" data-tab="tab-controls" class="tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg bg-slate-900 text-indigo-400 border-t border-x border-slate-800 flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-sliders"></i> Funciones y Animación
             </button>
-            <button data-tab="tab-math" class="tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5">
+            <button role="tab" id="tabbtn-math" aria-selected="false" aria-controls="tab-math" data-tab="tab-math" class="tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-square-root-variable"></i> Desarrollo Analítico
             </button>
         </div>
@@ -138,7 +138,7 @@
         <div class="flex-1 overflow-y-auto p-4 space-y-4 select-text">
 
             <!-- TAB 1: FUNCTIONS & ANIMATION CONTROLS -->
-            <div id="tab-controls" class="space-y-4">
+            <div id="tab-controls" role="tabpanel" aria-labelledby="tabbtn-controls" class="space-y-4">
                 
                 <!-- 1. Selector de Ejemplos / Presets -->
                 <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 space-y-2.5">
@@ -147,9 +147,9 @@
                             <i class="fa-solid fa-bookmark text-indigo-400"></i>
                             1. Elige o Crea tu Superficie
                         </label>
-                        <span class="text-[11px] text-slate-500">Editable abajo</span>
+                        <span class="text-xs text-slate-500">Editable abajo</span>
                     </div>
-                    <select id="preset-select" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500 transition">
+                    <select id="preset-select" aria-label="Superficie predefinida" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500 transition">
                         <option value="profesor">📄 Ejemplo 1: Hoja del Profesor (Polinomio grado 3)</option>
                         <option value="propuesta1">✨ Propuesta 1: Polinomio Suave (Recomendado para entrega)</option>
                         <option value="propuesta2">🐎 Propuesta 2: Paraboloide Hiperbólico / Silla de Montar</option>
@@ -167,46 +167,46 @@
                             2. Función Vectorial $\vec{r}(u,v) = [x, y, z]$
                         </span>
                         <button id="btn-apply-eq" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-lg transition shadow-sm flex items-center gap-1">
-                            <i class="fa-solid fa-rotate text-[10px]"></i> Actualizar Gráfica
+                            <i class="fa-solid fa-rotate text-xs"></i> Actualizar Gráfica
                         </button>
                     </div>
 
                     <div class="space-y-2">
                         <div class="flex items-center gap-2">
                             <span class="mono text-xs font-bold text-amber-400 w-12 shrink-0">x(u,v)=</span>
-                            <input id="inp-x" type="text" value="5*u^2 - 3*v^3 + 2*u - v" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                            <input id="inp-x" aria-label="x(u,v)" type="text" value="5*u^2 - 3*v^3 + 2*u - v" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="mono text-xs font-bold text-amber-400 w-12 shrink-0">y(u,v)=</span>
-                            <input id="inp-y" type="text" value="u^3 - 2*v^2 + u - 2" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                            <input id="inp-y" aria-label="y(u,v)" type="text" value="u^3 - 2*v^2 + u - 2" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="mono text-xs font-bold text-amber-400 w-12 shrink-0">z(u,v)=</span>
-                            <input id="inp-z" type="text" value="5*u^2 - 3*v^2 + 5" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                            <input id="inp-z" aria-label="z(u,v)" type="text" value="5*u^2 - 3*v^2 + 5" class="mono flex-1 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
                         </div>
                     </div>
 
                     <!-- Dominio de parámetros [uMin, uMax] y [vMin, vMax] -->
-                    <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                    <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-xs text-slate-400">
                         <div class="flex items-center justify-between bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800">
                             <span>Dominio $u$:</span>
                             <div class="flex items-center gap-1">
-                                <input id="inp-umin" type="number" step="0.5" value="-1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                                <input id="inp-umin" aria-label="u mínimo" type="number" step="0.5" value="-1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-xs">
                                 <span>a</span>
-                                <input id="inp-umax" type="number" step="0.5" value="1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                                <input id="inp-umax" aria-label="u máximo" type="number" step="0.5" value="1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-xs">
                             </div>
                         </div>
                         <div class="flex items-center justify-between bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800">
                             <span>Dominio $v$:</span>
                             <div class="flex items-center gap-1">
-                                <input id="inp-vmin" type="number" step="0.5" value="-1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                                <input id="inp-vmin" aria-label="v mínimo" type="number" step="0.5" value="-1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-xs">
                                 <span>a</span>
-                                <input id="inp-vmax" type="number" step="0.5" value="1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[11px]">
+                                <input id="inp-vmax" aria-label="v máximo" type="number" step="0.5" value="1.5" class="mono w-12 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-xs">
                             </div>
                         </div>
                     </div>
 
-                    <div id="eq-error-msg" class="hidden text-xs text-rose-400 bg-rose-950/50 border border-rose-800 rounded-lg px-2.5 py-1.5"></div>
+                    <div id="eq-error-msg" role="alert" class="hidden text-xs text-rose-400 bg-rose-950/50 border border-rose-800 rounded-lg px-2.5 py-1.5"></div>
                 </div>
 
                 <!-- 3. Controles Estáticos y de Animación en (u0, v0) -->
@@ -216,7 +216,7 @@
                             <i class="fa-solid fa-location-crosshairs text-emerald-400"></i>
                             3. Punto $(u_0, v_0)$ y Animación
                         </span>
-                        <span id="status-anim-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span id="status-anim-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                             MODO ESTÁTICO
                         </span>
                     </div>
@@ -227,7 +227,7 @@
                         <span id="txt-play">▶ Reproducir Animación desde este punto (u₀, v₀)</span>
                     </button>
 
-                    <p class="text-[11px] text-slate-400 leading-tight">
+                    <p class="text-xs text-slate-400 leading-tight">
                         Puedes escribir un valor exacto o mover los deslizadores manualmente. Al presionar <strong>Reproducir</strong>, el movimiento continuará desde esa posición.
                     </p>
 
@@ -239,9 +239,9 @@
                                     <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                                     Parámetro u₀ (Curva u):
                                 </span>
-                                <input id="num-inp-u" type="number" step="0.05" value="0.50" class="mono w-20 bg-slate-950 border border-slate-700 focus:border-rose-400 rounded px-2 py-0.5 text-right font-bold text-white text-xs focus:outline-none">
+                                <input id="num-inp-u" aria-label="Valor de u₀" type="number" step="0.05" value="0.50" class="mono w-20 bg-slate-950 border border-slate-700 focus:border-rose-400 rounded px-2 py-0.5 text-right font-bold text-white text-xs focus:outline-none">
                             </div>
-                            <input id="slider-u" type="range" min="-1.5" max="1.5" step="0.01" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                            <input id="slider-u" aria-label="Parámetro u₀" type="range" min="-1.5" max="1.5" step="0.01" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
                         </div>
 
                         <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/90 space-y-1.5">
@@ -250,16 +250,16 @@
                                     <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
                                     Parámetro v₀ (Curva v):
                                 </span>
-                                <input id="num-inp-v" type="number" step="0.05" value="0.50" class="mono w-20 bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded px-2 py-0.5 text-right font-bold text-white text-xs focus:outline-none">
+                                <input id="num-inp-v" aria-label="Valor de v₀" type="number" step="0.05" value="0.50" class="mono w-20 bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded px-2 py-0.5 text-right font-bold text-white text-xs focus:outline-none">
                             </div>
-                            <input id="slider-v" type="range" min="-1.5" max="1.5" step="0.01" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                            <input id="slider-v" aria-label="Parámetro v₀" type="range" min="-1.5" max="1.5" step="0.01" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
                         </div>
                     </div>
 
                     <!-- Tipo de Recorrido & Velocidad -->
                     <div class="grid grid-cols-2 gap-2 pt-1">
                         <div>
-                            <label class="text-[11px] text-slate-400 block mb-1">Trayectoria al animar:</label>
+                            <label for="anim-mode" class="text-xs text-slate-400 block mb-1">Trayectoria al animar:</label>
                             <select id="anim-mode" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 focus:outline-none">
                                 <option value="circle">Trayectoria Circular (u y v)</option>
                                 <option value="sweep-u">Solo variar u (curva u)</option>
@@ -268,11 +268,11 @@
                             </select>
                         </div>
                         <div>
-                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
                                 <span>Velocidad:</span>
                                 <span id="lbl-speed" class="mono text-slate-300">0.8x</span>
                             </div>
-                            <input id="slider-speed" type="range" min="0.2" max="2.5" step="0.1" value="0.8" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer mt-2">
+                            <input id="slider-speed" aria-label="Velocidad de animación" type="range" min="0.2" max="2.5" step="0.1" value="0.8" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer mt-2">
                         </div>
                     </div>
                 </div>
@@ -312,7 +312,7 @@
                     <!-- Vector Scale Control -->
                     <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-xs">
                         <span class="text-slate-400">Escala visual de vectores:</span>
-                        <input id="slider-vec-size" type="range" min="0.4" max="2.2" step="0.1" value="1.0" class="w-28 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                        <input id="slider-vec-size" aria-label="Tamaño de los vectores" type="range" min="0.4" max="2.2" step="0.1" value="1.0" class="w-28 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
                     </div>
                 </div>
 
@@ -322,7 +322,7 @@
                         <span>Evaluación Exacta en P(u₀, v₀)</span>
                         <span id="live-uv-badge" class="mono text-indigo-400">(u=0.50, v=0.50)</span>
                     </span>
-                    <div class="space-y-1.5 text-[11px] mono">
+                    <div class="space-y-1.5 text-xs mono">
                         <div class="p-2 rounded bg-slate-900 border-l-2 border-amber-400 flex justify-between">
                             <span class="text-amber-300 font-semibold">r(u₀,v₀) =</span>
                             <span id="num-r" class="text-slate-200">[0.00, 0.00, 0.00]</span>
@@ -345,7 +345,7 @@
             </div>
 
             <!-- TAB 2: ANALYTICAL DERIVATIVES & CROSS PRODUCT (LIKE THE PROFESSOR'S SHEET) -->
-            <div id="tab-math" class="hidden space-y-4">
+            <div id="tab-math" role="tabpanel" aria-labelledby="tabbtn-math" class="hidden space-y-4">
                 <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-3.5 text-xs text-indigo-200 leading-relaxed">
                     <i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i>
                     <strong>Cálculo Simbólico Automático:</strong> Al igual que en la hoja de tu profesor, aquí se calculan automáticamente las derivadas parciales simbólicas $\vec{r}_u$, $\vec{r}_v$ y el determinante del producto cruz $\vec{n} = \vec{r}_u \times \vec{r}_v$ para cualquier función que escribas.
@@ -372,9 +372,9 @@
                 <!-- Determinante Producto Cruz -->
                 <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
                     <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">4. Producto Cruz $\vec{n} = \vec{r}_u \times \vec{r}_v$</h3>
-                    <p class="text-[11px] text-slate-400">Desarrollando el determinante por cofactores $\hat{i}, \hat{j}, \hat{k}$:</p>
-                    <div id="sym-det" class="mono text-[11px] bg-slate-900 p-3 rounded-lg text-slate-300 overflow-x-auto"></div>
-                    <p class="text-[11px] text-emerald-300 font-semibold pt-1">Componentes de $\vec{n}(u,v) = [n_x, n_y, n_z]$:</p>
+                    <p class="text-xs text-slate-400">Desarrollando el determinante por cofactores $\hat{i}, \hat{j}, \hat{k}$:</p>
+                    <div id="sym-det" class="mono text-xs bg-slate-900 p-3 rounded-lg text-slate-300 overflow-x-auto"></div>
+                    <p class="text-xs text-emerald-300 font-semibold pt-1">Componentes de $\vec{n}(u,v) = [n_x, n_y, n_z]$:</p>
                     <div id="sym-n" class="mono text-xs bg-slate-900 p-2.5 rounded-lg text-slate-200 space-y-1.5 overflow-x-auto"></div>
                 </div>
             </div>
@@ -383,15 +383,15 @@
     </aside>
 
     <!-- MODAL: EXPORT TO GEOGEBRA 3D / PYTHON -->
-    <div id="modal-export" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4 select-text">
+    <div id="modal-export" role="dialog" aria-modal="true" aria-labelledby="modal-export-title" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4 select-text">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                 <div class="flex items-center gap-2.5">
                     <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
-                    <h2 class="text-sm font-bold text-white">Guía de Opciones y Código para GeoGebra 3D / Python</h2>
+                    <h2 id="modal-export-title" class="text-sm font-bold text-white">Guía de Opciones y Código para GeoGebra 3D / Python</h2>
                 </div>
-                <button id="btn-close-export" class="text-slate-400 hover:text-white p-1">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="btn-close-export" aria-label="Cerrar" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
 
@@ -409,28 +409,28 @@
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-white uppercase tracking-wider">1. Comandos para GeoGebra 3D (De tu función actual):</span>
-                        <button id="btn-copy-ggb" class="bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                        <button id="btn-copy-ggb" class="bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1">
                             <i class="fa-regular fa-copy"></i> Copiar GeoGebra
                         </button>
                     </div>
-                    <pre id="code-geogebra" class="mono text-[11px] bg-slate-950 border border-slate-800 p-3.5 rounded-xl overflow-x-auto text-emerald-300"></pre>
+                    <pre id="code-geogebra" class="mono text-xs bg-slate-950 border border-slate-800 p-3.5 rounded-xl overflow-x-auto text-emerald-300"></pre>
                 </div>
 
                 <!-- Python Matplotlib Script -->
                 <div class="space-y-2 pt-2">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-white uppercase tracking-wider">2. Script Completo en Python (Matplotlib 3D):</span>
-                        <button id="btn-copy-py" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                        <button id="btn-copy-py" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1">
                             <i class="fa-regular fa-copy"></i> Copiar Python
                         </button>
                     </div>
-                    <pre id="code-python" class="mono text-[11px] bg-slate-950 border border-slate-800 p-3.5 rounded-xl overflow-x-auto text-amber-300"></pre>
+                    <pre id="code-python" class="mono text-xs bg-slate-950 border border-slate-800 p-3.5 rounded-xl overflow-x-auto text-amber-300"></pre>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <script defer src="js/app.js"></script>
     <!-- Vercel Web Analytics -->
     <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
     <script defer src="/_vercel/insights/script.js"></script>

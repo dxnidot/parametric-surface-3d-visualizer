@@ -881,7 +881,7 @@ function updatePlayButtonUI() {
         txt.textContent = "⏸ Pausar Animación en el punto actual";
         btnPlay.className = "w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg";
         badge.textContent = "ANIMANDO (u, v)";
-        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        badge.className = "text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
 
         hudIcon.className = "fa-solid fa-pause";
         hudTxt.textContent = "Pausar (u,v)";
@@ -891,7 +891,7 @@ function updatePlayButtonUI() {
         txt.textContent = "▶ Reproducir Animación desde este punto (u₀, v₀)";
         btnPlay.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg";
         badge.textContent = "MODO ESTÁTICO";
-        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        badge.className = "text-xs font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30";
 
         hudIcon.className = "fa-solid fa-play";
         hudTxt.textContent = "Animar (u,v)";
@@ -1067,6 +1067,7 @@ function setupUIEvents() {
 
             tabBtns.forEach(b => {
                 const active = b === btn;
+                b.setAttribute('aria-selected', active);
                 b.className = active
                     ? "tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg bg-slate-900 text-indigo-400 border-t border-x border-slate-800 flex items-center justify-center gap-1.5"
                     : "tab-btn flex-1 py-2 px-3 text-xs font-semibold rounded-t-lg text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5";
@@ -1076,14 +1077,21 @@ function setupUIEvents() {
 
     // Export Modal
     const modal = document.getElementById('modal-export');
-    document.getElementById('btn-open-export').addEventListener('click', () => {
+    const openBtn = document.getElementById('btn-open-export');
+    const closeExportModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        openBtn.focus();
+    };
+    openBtn.addEventListener('click', () => {
         updateExportCodes();
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        document.getElementById('btn-close-export').focus();
     });
-    document.getElementById('btn-close-export').addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+    document.getElementById('btn-close-export').addEventListener('click', closeExportModal);
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeExportModal();
     });
 
     const copyTextHelper = (elementId, btnId, defaultLabel) => {
