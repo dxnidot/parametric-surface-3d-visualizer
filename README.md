@@ -32,7 +32,7 @@ Permite ingresar cualquier función vectorial $\vec{r}(u, v) = [x(u,v), y(u,v), 
 
 ## 🚀 Cómo Ejecutar el Proyecto
 
-No requiere instalación de dependencias ni servidores complejos (arquitectura *Single-File*):
+No requiere instalación de dependencias ni servidores complejos (sitio estático: `index.html`, `css/styles.css` y `js/app.js`):
 
 1. Clona este repositorio:
    ```bash
